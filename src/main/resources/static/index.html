@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S3 File Upload and Download</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            padding: 20px;
+        }
+        input[type="file"], button {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+<h1>S3 File Upload and Download</h1>
+
+<!-- 파일 업로드 폼 -->
+<h3>Upload File</h3>
+<input type="file" id="uploadFile" />
+<button onclick="uploadFile()">Upload</button>
+<p id="uploadResult"></p>
+
+<hr />
+
+<!-- 파일 다운로드 폼 -->
+<h3>Download File</h3>
+<input type="text" id="downloadKey" placeholder="Enter file name" />
+<button onclick="downloadFile()">Download</button>
+<p id="downloadResult"></p>
+
+<script>
+    const apiUrl = 'http://localhost:80/api/s3';
+
+    async function uploadFile() {
+        const fileInput = document.getElementById('uploadFile');
+        const file = fileInput.files[0];
+
+        if (!file) {
+            alert('Please select a file to upload.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch(`${apiUrl}/upload`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.text();
+            document.getElementById('uploadResult').innerText = result;
+        } catch (error) {
+            console.error('Error uploading file:', error);
+            document.getElementById('uploadResult').innerText = 'Upload failed.';
+        }
+    }
+
+    async function downloadFile() {
+        const key = document.getElementById('downloadKey').value;
+
+        if (!key) {
+            alert('Please enter the file name to download.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${apiUrl}/download?key=${key}`, {
+                method: 'GET'
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = key;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+                document.getElementById('downloadResult').innerText = 'Download successful.';
+            } else {
+                const result = await response.text();
+                document.getElementById('downloadResult').innerText = result;
+            }
+        } catch (error) {
+            console.error('Error downloading file:', error);
+            document.getElementById('downloadResult').innerText = 'Download failed.';
+        }
+    }
+</script>
+</body>
+</html>
